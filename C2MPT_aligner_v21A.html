@@ -1,0 +1,2881 @@
+<!DOCTYPE html><html lang="en"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://trytako.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Classical–Modern Alignment Tool (Multi-sentence)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121a33;
+      --text:#e7ecff;
+      --muted:#a8b2d6;
+      --border:rgba(255,255,255,.12);
+      --accent:#7aa2ff;
+      --ok:#2dd4bf;
+      --danger:#fb7185;
+      --shadow: 0 10px 25px rgba(0,0,0,.25);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 15% 10%, rgba(122,162,255,.18), transparent 60%),
+                  radial-gradient(900px 700px at 90% 25%, rgba(45,212,191,.12), transparent 60%),
+                  linear-gradient(180deg, var(--bg), #070a14 80%);
+    }
+    header{
+      padding:16px 18px;
+      border-bottom:1px solid var(--border);
+      background: rgba(10, 14, 30, .6);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top:0;
+      z-index:5;
+    }
+    header .topbar{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    header h1{
+      font-size:16px;
+      margin:0;
+      font-weight:700;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    header .sub{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    /* --- Resizable 3-pane layout --- */
+    .wrap{
+      height: calc(100% - 82px);
+      display:flex;
+      gap:0;
+      padding:14px;
+      min-height:0;
+      align-items:stretch;
+    }
+    .pane{
+      min-width: 240px;
+      min-height: 0;
+      display:flex;
+    }
+    .splitter{
+      flex: 0 0 10px;
+      margin: 0 10px;
+      border-radius: 999px;
+      position: relative;
+      cursor: col-resize;
+      user-select:none;
+      touch-action:none;
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(255,255,255,.07);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+    }
+    .splitter::after{
+      content:"";
+      position:absolute;
+      top:50%;
+      left:50%;
+      width: 3px;
+      height: 56px;
+      transform: translate(-50%,-50%);
+      border-radius: 999px;
+      background: rgba(231,236,255,.18);
+      box-shadow: -6px 0 0 rgba(231,236,255,.12), 6px 0 0 rgba(231,236,255,.12);
+    }
+    .splitter:active{ background: rgba(122,162,255,.08); border-color: rgba(122,162,255,.25); }
+
+    @media (max-width: 1100px){
+      .wrap{ flex-direction:column; height:auto; gap:14px; }
+      .splitter{ display:none; }
+      .pane{ width:100% !important; min-width: 0; }
+      header{ position:relative; }
+    }
+
+    .panel{
+      width:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height: 0;
+    }
+
+    .panel .hd{
+      padding:12px 12px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: rgba(255,255,255,.02);
+    }
+    .panel .hd .title{ font-size:13px; font-weight:700; }
+    .panel .hd .meta{
+      font-size:11px;
+      color:var(--muted);
+      font-family:var(--mono);
+      white-space:nowrap;
+    }
+    .panel .bd{
+      padding:12px;
+      overflow:auto;
+      flex:1;
+      min-height: 0;
+    }
+
+    textarea{
+      width:100%;
+      resize: vertical;
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      outline:none;
+      color:var(--text);
+      background: rgba(0,0,0,.18);
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.45;
+      touch-action: manipulation;
+    }
+    textarea:focus{ border-color: rgba(122,162,255,.45); box-shadow: 0 0 0 3px rgba(122,162,255,.12); }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+
+    button{
+      appearance:none;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 9px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 650;
+      cursor:pointer;
+      transition: transform .05s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      touch-action: manipulation;
+    }
+    button:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+    button:active{ transform: translateY(1px); }
+    button.primary{ background: rgba(122,162,255,.22); border-color: rgba(122,162,255,.4); }
+    button.primary:hover{ background: rgba(122,162,255,.28); }
+    button.danger{ background: rgba(251,113,133,.14); border-color: rgba(251,113,133,.35); }
+    button.ghost{ background: rgba(0,0,0,.10); }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .hint{ font-size: 12px; color:var(--muted); margin-top:10px; line-height:1.35; }
+
+    .card{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      padding:10px;
+    }
+    .card .cap{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+      gap:10px;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .metaGrid{
+      display:grid;
+      grid-template-columns: 92px 1fr;
+      gap:8px 10px;
+      align-items:center;
+    }
+    .metaGrid label{
+      color: rgba(168,178,214,.95);
+      font-size:12px;
+      font-weight:650;
+    }
+    .metaGrid input{
+      width:100%;
+      padding:8px 10px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      outline:none;
+      color:var(--text);
+      background: rgba(0,0,0,.18);
+      font-family: var(--mono);
+      font-size: 12.5px;
+      touch-action: manipulation;
+    }
+    .metaGrid input:focus{ border-color: rgba(122,162,255,.45); box-shadow: 0 0 0 3px rgba(122,162,255,.12); }
+
+    /* Left tabs */
+    .tabs{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .tabBtn{
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(0,0,0,.12);
+    }
+    .tabBtn.active{
+      background: rgba(45,212,191,.14);
+      border-color: rgba(45,212,191,.35);
+    }
+    .leftTabBody{ display:none; }
+    .leftTabBody.active{ display:block; }
+
+    /* Middle toolbar */
+    .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:stretch; }
+    .toolgroup{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:10px;
+      border:1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(0,0,0,.12);
+      width: 100%;
+    }
+    .typeRow{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+
+    .chk{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      user-select:none;
+      cursor:pointer;
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+    .chk input{ accent-color: var(--accent); cursor:pointer; }
+    .chk code{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(231,236,255,.95);
+      background: rgba(255,255,255,.06);
+      padding: 1px 6px;
+      border-radius: 7px;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .ctl{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      font-size:12px;
+      color: rgba(231,236,255,.95);
+      flex-wrap:wrap;
+    }
+    .ctl label{ color: var(--muted); font-weight: 750; }
+    .ctl select, .ctl input{
+      border-radius: 10px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      padding: 6px 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      outline: none;
+      min-width: 72px;
+      touch-action: manipulation;
+    }
+    .ctl input{ min-width: 120px; width: 160px; }
+    .ctl select:focus, .ctl input:focus{
+      border-color: rgba(122,162,255,.45);
+      box-shadow: 0 0 0 3px rgba(122,162,255,.10);
+    }
+    .ctl.disabled{ opacity:.55; filter: grayscale(.3); }
+    .ctl.disabled select, .ctl.disabled input{ pointer-events:none; }
+    .ctl .subhint{
+      font-size: 11px;
+      color: rgba(168,178,214,.9);
+      font-family: var(--mono);
+      margin-left: 2px;
+      white-space: nowrap;
+    }
+
+    .scopeBox{
+      width: 100%;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding-top: 2px;
+    }
+    .scopeHeader{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .toggleBtn{ padding: 6px 10px; border-radius: 12px; font-size: 12px; }
+    .scopeBody{ display:none; }
+    .scopeBox.expanded .scopeBody{ display:block; }
+
+    .legend{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; font-size:12px; color: var(--muted); }
+    .pill{
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      padding: 4px 9px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      border-radius: 999px;
+    }
+    .dot{ width:8px; height:8px; border-radius:50%; background: var(--accent); opacity:.9; }
+    .dot.ok{ background: #2dd4bf; }
+    .dot.danger{ background: var(--danger); }
+    .kbd{
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 7px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color: rgba(231,236,255,.9);
+    }
+
+    /* Canvas area */
+    .canvasOuter{
+      margin-top:10px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+    .canvasViewport{
+      height: 320px;
+      overflow:auto;
+      overscroll-behavior: contain;
+      position:relative;
+      touch-action: pan-x pan-y;
+    }
+    .canvasContent{
+      position:relative;
+      min-width:max-content;
+      padding: 10px 10px 6px 10px;
+    }
+    .layers{
+      position:relative;
+      z-index:2;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      min-width:max-content;
+    }
+    .mini{ font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom:4px; }
+    .tokenRow{
+      display:flex;
+      flex-wrap: nowrap;
+      gap:8px;
+      align-items:flex-start;
+      min-width:max-content;
+    }
+    .token{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      cursor: crosshair;
+      user-select:none;
+      position:relative;
+      white-space: nowrap;
+      flex: 0 0 auto;
+      transition: border-color .12s ease, background .12s ease, outline-color .12s ease, transform .05s ease;
+      touch-action: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    .token:hover{ border-color: rgba(122,162,255,.45); }
+    .token.selected{
+      outline: 3px solid rgba(122,162,255,.18);
+      border-color: rgba(122,162,255,.55);
+      background: rgba(122,162,255,.10);
+    }
+    .token.dragFocus{
+      outline: 3px solid rgba(45,212,191,.20);
+      border-color: rgba(45,212,191,.75);
+      background: rgba(45,212,191,.12);
+    }
+    .token.dragTarget{
+      outline: 3px solid rgba(251,113,133,.18);
+      border-color: rgba(251,113,133,.70);
+      background: rgba(251,113,133,.10);
+    }
+    .token.dragCombine{
+      outline: 3px solid rgba(251,191,36,.18);
+      border-color: rgba(251,191,36,.70);
+      background: rgba(251,191,36,.10);
+    }
+    .token .idx{
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color:var(--muted);
+      min-width: 26px;
+      text-align:center;
+    }
+    .token .txt{ font-size: 13px; font-weight: 650; letter-spacing: .15px; }
+
+    canvas#linkCanvas{
+      position:absolute;
+      left:0;
+      top:0;
+      z-index:3;
+      pointer-events:none;
+    }
+
+    .jsonOut{
+      min-height: 420px;
+      height: 100%;
+      width:100%;
+      padding:10px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      outline:none;
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.45;
+      white-space: pre;
+      touch-action: manipulation;
+    }
+    .jsonOut:focus{ border-color: rgba(45,212,191,.45); box-shadow: 0 0 0 3px rgba(45,212,191,.10); }
+
+    /* --- Help modal --- */
+    .modalOverlay{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 999;
+    }
+    .modalOverlay.open{ display:flex; }
+    .modal{
+      width: min(980px, 100%);
+      max-height: min(86vh, 820px);
+      overflow:hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(18,26,51,.95), rgba(10,14,30,.92));
+      box-shadow: 0 18px 50px rgba(0,0,0,.45);
+      display:flex;
+      flex-direction:column;
+    }
+    .modalHd{
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      background: rgba(255,255,255,.02);
+    }
+    .modalHd .title{
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: .2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .modalBd{
+      padding: 14px;
+      overflow:auto;
+      line-height: 1.55;
+      font-size: 13px;
+      color: rgba(231,236,255,.95);
+    }
+    .modalBd h2{ margin: 18px 0 8px; font-size: 14px; }
+    .modalBd h3{ margin: 14px 0 6px; font-size: 13px; color: rgba(231,236,255,.92); }
+    .modalBd p, .modalBd li{ color: rgba(231,236,255,.92); }
+    .modalBd code{
+      font-family: var(--mono);
+      font-size: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 1px 6px;
+      border-radius: 8px;
+    }
+    .modalBd .muted{ color: rgba(168,178,214,.95); font-size: 12px; }
+    .modalBd .callout{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+    .modalBd .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 760px){ .modalBd .grid2{ grid-template-columns: 1fr; } }
+    .helpBtn{
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(45,212,191,.14);
+      border-color: rgba(45,212,191,.35);
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <h1>
+      Parallel Alignment Tool (Multi-sentence • Classical ↔ Modern)
+      <button id="btnHelp" class="helpBtn" type="button" aria-haspopup="dialog" aria-controls="helpModal">Help</button>
+    </h1>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <span style="font-family:var(--mono); font-size:11px; color:rgba(168,178,214,.95);" id="buildStamp"></span>
+    </div>
+  </div>
+
+  <div class="sub">
+    Drag tokens across layers to link.
+    Hold <span class="kbd">Shift</span> for multi-link; hold <span class="kbd">Ctrl</span> for directional <b>combine-link</b> (one-to-many range).
+    Double-click a line to delete it; double-click a token to delete all its links.
+    <span style="display:inline-block; margin-left:8px; color:rgba(168,178,214,.95)">Mobile: drag with finger (long-press not needed).</span>
+  </div>
+</header>
+
+<!-- Help Modal -->
+<div class="modalOverlay" id="helpOverlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal" id="helpModal">
+    <div class="modalHd">
+      <div class="title" id="helpTitle">
+        Help • Manual
+        <span style="font-family:var(--mono); font-size:11px; color:rgba(168,178,214,.95);" id="helpVersionStamp"></span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button id="btnHelpLang" type="button" class="ghost">中文</button>
+        <button id="btnHelpClose" type="button" class="primary">Close</button>
+      </div>
+    </div>
+    <div class="modalBd" id="helpBody"></div>
+  </div>
+</div>
+
+<div class="wrap" id="wrap">
+  <!-- Left -->
+  <div class="pane" id="paneLeft" style="width:30%;">
+    <section class="panel" id="leftPanel">
+      <div class="hd">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div class="title">Input</div>
+          <div class="tabs">
+            <button class="tabBtn" id="tabText" type="button">Text</button>
+            <button class="tabBtn" id="tabMeta" type="button">Metadata</button>
+          </div>
+        </div>
+        <div class="meta" id="leftMeta">pairs:0</div>
+      </div>
+      <div class="bd">
+        <div class="leftTabBody" id="leftTextBody">
+          <div class="card">
+            <div class="cap">
+              <span>Classical &amp; Modern Text</span>
+              <span style="font-family:var(--mono); font-size:11px;">(odd=classical, even=modern)</span>
+            </div>
+
+            <textarea id="inputText" spellcheck="false" style="min-height:520px;" placeholder="Load a .txt file OR paste text here…"></textarea>
+
+            <div class="row">
+              <input id="fileInput" type="file" accept=".txt,text/plain" style="display:none">
+              <button id="btnLoadFile" class="primary" type="button">Load Text File (.txt)</button>
+              <button class="primary" id="btnParse" type="button">Parse &amp; Store Pairs</button>
+            </div>
+
+            <div class="row">
+              <input id="projectInput" type="file" accept=".json,application/json" style="display:none">
+              <button id="btnSaveProject" type="button">Save Project</button>
+              <button id="btnLoadProject" class="primary" type="button">Load Project</button>
+            </div>
+
+            <div class="row">
+              <button id="btnUpdateCurrentPair" class="primary" type="button" title="Re-parse ONLY the current sentence pair from the text box. Keeps other pairs and alignments.">Update Current Pair (Re-parse)</button>
+            </div>
+
+            <div class="row">
+              <button id="btnNewEmpty" type="button" class="ghost" title="Reset all sentence pairs">New / Reset</button>
+              <button id="btnClearAllLinks" class="danger" title="Clear alignments for all sentence pairs" type="button">Clear All Alignments</button>
+              <button id="btnExport" type="button">Convert</button>
+            </div>
+
+            <div class="hint">
+              New: <b>Update Current Pair (Re-parse)</b> lets you correct minor text mistakes without redoing all alignments.
+              Save/Load Project stores: Text, Metadata, alignments, and current sentence pair index.
+            </div>
+          </div>
+        </div>
+
+        <div class="leftTabBody" id="leftMetaBody">
+          <div class="card">
+            <div class="cap">
+              <span>Chapter Metadata</span>
+              <span style="font-family:var(--mono); font-size:11px;">single-line inputs</span>
+            </div>
+
+            <div class="metaGrid">
+              <label for="meta_id">id</label>         <input id="meta_id" value="id_1">
+              <label for="meta_name">name</label>     <input id="meta_name" value="untitled">
+              <label for="meta_book">book</label>     <input id="meta_book" value="untitled">
+              <label for="meta_chapter">chapter</label><input id="meta_chapter" value="untitled">
+              <label for="meta_author">author</label> <input id="meta_author" value="anonymous">
+              <label for="meta_era">era</label>       <input id="meta_era" value="undated">
+            </div>
+
+            <div class="hint" style="margin-top:10px;">
+              Output uses <code>sentencesByChapter[meta.id]</code>. Change metadata any time; output updates live.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="splitter" id="splitLM" aria-label="Resize left and middle"></div>
+
+  <!-- Middle -->
+  <div class="pane" id="paneMid" style="width:40%;">
+    <section class="panel" id="midPanel">
+      <div class="hd">
+        <div class="title">Workspace</div>
+        <div class="meta"><span id="counts">c:0 m:0</span> • <span id="status">ready</span></div>
+      </div>
+      <div class="bd">
+        <div class="toolgroup" style="margin-bottom:10px;">
+          <div class="typeRow" style="justify-content:space-between;">
+            <span class="ctl" style="flex:1;">
+              <label for="selPair">sentence pair</label>
+              <select id="selPair" style="min-width:200px;"></select>
+              <span class="subhint" id="pairLabel">0/0</span>
+            </span>
+
+            <span class="ctl" style="gap:6px;">
+              <button id="btnPrev" type="button" class="ghost" style="padding:7px 10px;">&lt;</button>
+              <span style="font-family:var(--mono); color:rgba(231,236,255,.9); min-width:66px; text-align:center;" id="pairProgress">0/0</span>
+              <button id="btnNext" type="button" class="ghost" style="padding:7px 10px;">&gt;</button>
+              <input id="txtGoto" type="text" inputmode="numeric" placeholder="#" title="Go to pair #" style="width:70px; min-width:70px;">
+              <button id="btnGoto" type="button" style="padding:7px 10px;">Go</button>
+            </span>
+          </div>
+
+          <div class="hint" style="margin-top:8px;">
+            <span class="kbd">Shift</span> = multi-link (one-to-one repeated). <span class="kbd">Ctrl</span> = combine-link (one-to-many range; also forces quoting on the many-side even for a single token).
+            <span style="display:inline-block; margin-left:8px;">Touch: drag with finger.</span>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="toolgroup" id="typeGroup">
+            <div class="typeRow">
+              <label class="chk" title="natural (default): blank label">
+                <input type="checkbox" data-code="" id="chkNatural" checked="">
+                natural
+              </label>
+
+              <label class="chk" title="ellipsis: &quot;-&quot;">
+                <input type="checkbox" data-code="-" class="chkNonNatural">
+                ellipsis <code>-</code>
+              </label>
+
+              <label class="chk" title="addition: &quot;+&quot;">
+                <input type="checkbox" data-code="+" class="chkNonNatural" id="chkAdd">
+                addition <code>+</code>
+              </label>
+
+              <span class="ctl">
+                <span class="subhint">addition exports cIdx as string</span>
+              </span>
+            </div>
+
+            <div class="scopeBox" id="scopeBox">
+              <div class="scopeHeader">
+                <div class="ctl" style="flex:1; justify-content:space-between;">
+                  <span style="display:inline-flex; align-items:center; gap:8px;">
+                    <label style="margin-right:0;">scope(s)</label>
+                    <span class="subhint">applies to all alignments</span>
+                  </span>
+                  <button class="toggleBtn" id="btnToggleScopes" type="button">Expand</button>
+                </div>
+              </div>
+              <div class="scopeBody">
+                <div class="ctl" id="ctlScopes" style="width:100%;">
+                  <label for="selScopes">select</label>
+                  <select id="selScopes" multiple size="4" style="min-width:160px;"></select>
+                  <span class="subhint">Ctrl/⌘ multi-select. (empty)=no scope obj</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="typeRow">
+              <label class="chk" title="paraphrasing / note: &quot;#&quot;">
+                <input type="checkbox" data-code="#" class="chkNonNatural" id="chkNote">
+                paraphrasing <code>#</code>
+              </label>
+
+              <span class="ctl disabled" id="ctlNote">
+                <label for="selNote">note</label>
+                <select id="selNote"></select>
+                <label for="txtNote" style="margin-left:2px;">content</label>
+                <input id="txtNote" type="text" placeholder="(optional)…">
+                <span class="subhint">empty → note:n</span>
+              </span>
+            </div>
+
+            <div class="typeRow">
+              <label class="chk" title="re-order: &quot;^&quot;">
+                <input type="checkbox" data-code="^" class="chkNonNatural" id="chkReorder">
+                reorder <code>^</code>
+              </label>
+              <span class="ctl disabled" id="ctlGroup">
+                <label for="selGroup">group</label>
+                <select id="selGroup"></select>
+              </span>
+            </div>
+
+            <div class="typeRow">
+              <label class="chk" title="restructure: &quot;x&quot;">
+                <input type="checkbox" data-code="x" class="chkNonNatural" id="chkRestructure">
+                restructure <code>x</code>
+              </label>
+              <span class="ctl disabled" id="ctlFrame">
+                <label for="selFrame">frame</label>
+                <select id="selFrame"></select>
+              </span>
+            </div>
+
+            <div class="typeRow">
+              <label class="chk" title="borrow: &quot;~&quot;">
+                <input type="checkbox" data-code="~" class="chkNonNatural">
+                borrow <code>~</code>
+              </label>
+              <label class="chk" title="derivate: &quot;*&quot;">
+                <input type="checkbox" data-code="*" class="chkNonNatural">
+                derivate <code>*</code>
+              </label>
+            </div>
+
+            <div class="hint" style="margin-top:2px;">
+              Same pair (same cIdx &amp; mIdx) replaces. Combine-links use comma-strings like <code>"0,1,2"</code>.
+              <div style="margin-top:6px;">
+                Note: <span class="kbd">Shift</span>/<span class="kbd">Ctrl</span> are desktop-only. On touch, do normal one-to-one drag.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span class="pill"><span class="dot"></span> Stored links</span>
+          <span class="pill"><span class="dot ok"></span> <span class="kbd">Shift</span> multi-link</span>
+          <span class="pill"><span class="dot" style="background:rgba(251,191,36,.95)"></span> <span class="kbd">Ctrl</span> combine-link</span>
+          <span class="pill"><span class="dot danger"></span> Double-click = delete</span>
+        </div>
+
+        <div class="canvasOuter">
+          <div class="canvasViewport" id="canvasViewport">
+            <div class="canvasContent" id="canvasContent">
+              <canvas id="linkCanvas"></canvas>
+
+              <div class="layers">
+                <div>
+                  <div class="mini">Classical tokens</div>
+                  <div class="tokenRow" id="classicalRow"></div>
+                </div>
+                <div>
+                  <div class="mini">Modern tokens</div>
+                  <div class="tokenRow" id="modernRow"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <button id="btnClearLinksThis" class="danger" type="button">Clear Alignments (This Pair)</button>
+        </div>
+
+        <div class="hint">
+          Touch: Drag token to the opposite layer to link. If the page scrolls, start the drag directly on the token (token uses <code>touch-action:none</code>).
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="splitter" id="splitMR" aria-label="Resize middle and right"></div>
+
+  <!-- Right -->
+  <div class="pane" id="paneRight" style="width:30%;">
+    <section class="panel" id="rightPanel">
+      <div class="hd">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div class="title">Output</div>
+          <div class="tabs">
+            <button class="tabBtn active" id="tabWhole" type="button">Whole</button>
+            <button class="tabBtn" id="tabFocus" type="button">Focus (Current Pair)</button>
+          </div>
+        </div>
+        <div class="meta"><span id="invMeta">pairs:0 • links:0</span></div>
+      </div>
+      <div class="bd">
+        <div class="row" style="margin-top:0;">
+          <button id="btnDownload" class="primary" type="button">Download TXT</button>
+          <button id="btnCopy" type="button">Copy</button>
+        </div>
+        <textarea class="jsonOut" id="jsonOut" spellcheck="false"></textarea>
+        <div class="hint">
+          Whole = all sentence pairs. Focus = current pair only.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // --------------------------
+  // Build / Version info
+  // --------------------------
+  const APP_VERSION = "21.0";
+  const APP_VERSION_SHORT = "21";
+  const BUILD_DATE = "2026-01-26"; // (the date created the html)
+
+  function updateBuildStamps(){
+    $("#buildStamp").textContent = `Version ${APP_VERSION} • ${BUILD_DATE}`;
+    $("#helpVersionStamp").textContent = `(Version ${APP_VERSION} • ${BUILD_DATE})`;
+  }
+
+  // --------------------------
+  // Helpers
+  // --------------------------
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  function tokenize(line){ return line.trim().length ? line.trim().split(/\s+/) : []; }
+  function setStatus(t){ $("#status").textContent = t; }
+
+  function getMeta(){
+    return {
+      id: $("#meta_id").value.trim() || "id_1",
+      name: $("#meta_name").value.trim() || "untitled",
+      book: $("#meta_book").value.trim() || "untitled",
+      chapter: $("#meta_chapter").value.trim() || "untitled",
+      author: $("#meta_author").value.trim() || "anonymous",
+      era: $("#meta_era").value.trim() || "undated",
+    };
+  }
+  function setMeta(meta){
+    $("#meta_id").value = meta?.id ?? "id_1";
+    $("#meta_name").value = meta?.name ?? "untitled";
+    $("#meta_book").value = meta?.book ?? "untitled";
+    $("#meta_chapter").value = meta?.chapter ?? "untitled";
+    $("#meta_author").value = meta?.author ?? "anonymous";
+    $("#meta_era").value = meta?.era ?? "undated";
+  }
+  function setMetaIdFromFilename(filename){
+    const base = filename.replace(/^.*[\\/]/, "").replace(/\.[^/.]+$/, "");
+    $("#meta_id").value = base || $("#meta_id").value;
+  }
+
+  function jsStringEscape(s){
+    return String(s)
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"')
+      .replace(/\r/g, "\\r")
+      .replace(/\n/g, "\\n")
+      .replace(/\t/g, "\\t");
+  }
+  function toJsString(s){ return `"${jsStringEscape(s)}"`; }
+  function formatJsArrayOfStrings(arr){ return `[${arr.map(x => toJsString(x)).join(", ")}]`; }
+
+  function makeOptions1to10(selectEl){
+    selectEl.innerHTML = "";
+    for(let i=1;i<=10;i++){
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = String(i);
+      selectEl.appendChild(opt);
+    }
+  }
+  function makeScopeMultiSelect(selectEl){
+    selectEl.innerHTML = "";
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "(empty)";
+    empty.selected = true;
+    selectEl.appendChild(empty);
+    for(let i=1;i<=10;i++){
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = String(i);
+      selectEl.appendChild(opt);
+    }
+  }
+  function getSelectedValues(selectEl){
+    return Array.from(selectEl.selectedOptions).map(o => o.value);
+  }
+  function normalizeScopesSelection(){
+    const sel = $("#selScopes");
+    const vals = getSelectedValues(sel);
+    if(vals.includes("") && vals.some(v => v !== "")){
+      Array.from(sel.options).forEach(opt => { if(opt.value === "") opt.selected = false; });
+    }
+    const now = getSelectedValues(sel);
+    if(now.length === 0) sel.options[0].selected = true;
+  }
+  function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+
+  // For combine-link: build comma string for inclusive range [a..b]
+  function rangeString(a,b){
+    const s = Math.min(a,b), e = Math.max(a,b);
+    const out = [];
+    for(let i=s;i<=e;i++) out.push(i);
+    return out.join(",");
+  }
+
+  // --------------------------
+  // Left panel tabs
+  // --------------------------
+  let leftTab = "text";
+  function setLeftTab(tab){
+    leftTab = tab;
+    $("#tabText").classList.toggle("active", tab === "text");
+    $("#tabMeta").classList.toggle("active", tab === "meta");
+    $("#leftTextBody").classList.toggle("active", tab === "text");
+    $("#leftMetaBody").classList.toggle("active", tab === "meta");
+  }
+
+  // --------------------------
+  // Multi-sentence storage
+  // --------------------------
+  let sentencePairs = [];
+  let currentPairIndex = 0;
+
+  function makeSentenceId(chapterId, oneBasedIndex){
+    return `${chapterId}_${String(oneBasedIndex).padStart(3,"0")}`;
+  }
+
+  function updateLeftMeta(){ $("#leftMeta").textContent = `pairs:${sentencePairs.length}`; }
+
+  function updateNavUI(){
+    const total = sentencePairs.length;
+    const oneBased = total ? (currentPairIndex + 1) : 0;
+
+    $("#pairLabel").textContent = `${oneBased}/${total}`;
+    $("#pairProgress").textContent = `${oneBased}/${total}`;
+
+    $("#btnPrev").disabled = !(total && currentPairIndex > 0);
+    $("#btnNext").disabled = !(total && currentPairIndex < total - 1);
+
+    const sel = $("#selPair");
+    sel.disabled = !total;
+    $("#txtGoto").disabled = !total;
+    $("#btnGoto").disabled = !total;
+
+    $("#btnUpdateCurrentPair").disabled = !total;
+
+    if(total){
+      const expectedValue = String(currentPairIndex);
+      if(sel.value !== expectedValue) sel.value = expectedValue;
+    }
+  }
+
+  function rebuildPairDropdown(){
+    const sel = $("#selPair");
+    sel.innerHTML = "";
+    if(sentencePairs.length === 0){
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "(no pairs loaded)";
+      sel.appendChild(opt);
+      sel.disabled = true;
+      return;
+    }
+    sentencePairs.forEach((p, idx) => {
+      const opt = document.createElement("option");
+      opt.value = String(idx);
+      const cPrev = (p.classicalLine || "").trim();
+      const mPrev = (p.modernLine || "").trim();
+      const preview = `${idx+1}. ${cPrev.slice(0, 18)}${cPrev.length>18?"…":""}  ↔  ${mPrev.slice(0, 18)}${mPrev.length>18?"…":""}`;
+      opt.textContent = preview;
+      sel.appendChild(opt);
+    });
+    sel.value = String(currentPairIndex);
+    sel.disabled = false;
+  }
+
+  // --------------------------
+  // Type rules + meta object builder
+  // --------------------------
+  function syncTypeCheckboxes(){
+    const natural = $("#chkNatural");
+    const nonNatural = $$(".chkNonNatural");
+    const anyNonNatural = nonNatural.some(c => c.checked);
+    if(anyNonNatural){
+      natural.checked = false;
+      natural.disabled = true;
+    }else{
+      natural.disabled = false;
+      natural.checked = true;
+    }
+
+    $("#ctlNote").classList.toggle("disabled", !$("#chkNote").checked);
+    $("#ctlGroup").classList.toggle("disabled", !$("#chkReorder").checked);
+    $("#ctlFrame").classList.toggle("disabled", !$("#chkRestructure").checked);
+  }
+
+function syncTypeCheckboxes(){
+    const natural = $("#chkNatural");
+    const nonNatural = $$(".chkNonNatural");
+    const anyNonNatural = nonNatural.some(c => c.checked);
+    if(anyNonNatural){
+      natural.checked = false;
+      natural.disabled = true;
+    }else{
+      natural.disabled = false;
+      natural.checked = true;
+    }
+
+    $("#ctlNote").classList.toggle("disabled", !$("#chkNote").checked);
+    $("#ctlGroup").classList.toggle("disabled", !$("#chkReorder").checked);
+    $("#ctlFrame").classList.toggle("disabled", !$("#chkRestructure").checked);
+  }
+
+  // Reset all alignment parameter UI to defaults (used when switching sentence pair)
+  function resetAlignmentParamsToDefault(){
+    // 1) natural checked; 2) all other type checkboxes unchecked
+    $("#chkNatural").checked = true;
+    $$(".chkNonNatural").forEach(cb => { cb.checked = false; });
+
+    // 3) reset scope(s) to (empty)
+    const selScopes = $("#selScopes");
+    if(selScopes){
+      Array.from(selScopes.options).forEach(opt => {
+        opt.selected = (opt.value === "");
+      });
+      normalizeScopesSelection();
+    }
+
+    // reset note/group/frame inputs
+    const selNote = $("#selNote"); if(selNote) selNote.value = "1";
+    const txtNote = $("#txtNote"); if(txtNote) txtNote.value = "";
+    const selGroup = $("#selGroup"); if(selGroup) selGroup.value = "1";
+    const selFrame = $("#selFrame"); if(selFrame) selFrame.value = "1";
+
+    // ensure UI enables/disables are correct after reset
+    syncTypeCheckboxes();
+
+    // optional: update canvas preview label state immediately
+    redraw();
+  }
+
+
+  function getActiveTypeCode(){
+    const nonNatural = $$(".chkNonNatural").filter(c => c.checked).map(c => c.dataset.code);
+    return nonNatural.length ? nonNatural.join("") : "";
+  }
+
+  function getActiveMetaObject(){
+    const obj = {};
+
+    normalizeScopesSelection();
+    const vals = getSelectedValues($("#selScopes")).filter(v => v !== "");
+    const nums = vals.map(v => Number(v)).filter(n => Number.isFinite(n)).sort((a,b)=>a-b);
+    const uniq = nums.filter((n,i) => i === 0 || n !== nums[i-1]);
+
+    if(uniq.length === 1) obj.scope = uniq[0];
+    else if(uniq.length > 1) obj.scopes = uniq;
+
+    if($("#chkNote").checked){
+      const n = Number($("#selNote").value || 1);
+      const content = $("#txtNote").value.trim();
+      obj.note = content.length ? [n, content] : n;
+    }
+
+    if($("#chkReorder").checked){
+      obj.group = Number($("#selGroup").value || 1);
+    }
+
+    if($("#chkRestructure").checked){
+      obj.frame = Number($("#selFrame").value || 1);
+    }
+
+    return Object.keys(obj).length ? obj : null;
+  }
+
+  $("#typeGroup").addEventListener("change", (e) => {
+    if(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement){
+      if(e.target.id === "selScopes") normalizeScopesSelection();
+      syncTypeCheckboxes();
+      redraw();
+    }
+  });
+  $("#txtNote").addEventListener("input", () => redraw());
+  $("#selScopes").addEventListener("change", () => { normalizeScopesSelection(); redraw(); });
+
+  const scopeBox = $("#scopeBox");
+  const btnToggleScopes = $("#btnToggleScopes");
+  let scopesExpanded = false;
+  function setScopesExpanded(on){
+    scopesExpanded = !!on;
+    scopeBox.classList.toggle("expanded", scopesExpanded);
+    btnToggleScopes.textContent = scopesExpanded ? "Collapse" : "Expand";
+  }
+  btnToggleScopes.addEventListener("click", () => setScopesExpanded(!scopesExpanded));
+  setScopesExpanded(false);
+
+  // --------------------------
+  // Current pair getters
+  // --------------------------
+  function hasPairs(){ return sentencePairs.length > 0; }
+  function curPair(){ return sentencePairs[currentPairIndex] || null; }
+  function curLinks(){ const p = curPair(); return p ? p.links : []; }
+
+  // Workspace tokens derived from current pair
+  let classicalTokens = [];
+  let modernTokens = [];
+
+  // --------------------------
+  // NEW FEATURE: Update Current Pair (re-parse only)
+  // --------------------------
+  function getNonEmptyLinesFromInput(){
+    const raw = ($("#inputText").value || "").replace(/\r\n/g, "\n");
+    return raw.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  }
+
+  function updateCurrentPairFromTextBox(){
+    if(!hasPairs()){
+      setStatus("No sentence pairs loaded.");
+      return;
+    }
+
+    const lines = getNonEmptyLinesFromInput();
+    const expectedLines = sentencePairs.length * 2;
+    if(lines.length !== expectedLines){
+      setStatus(`Update blocked: text now has ${lines.length} non-empty lines, but platform has ${expectedLines}. Use "Parse & Store Pairs" to rebuild.`);
+      return;
+    }
+
+    const i = currentPairIndex;
+    const cLine = lines[i*2];
+    const mLine = lines[i*2 + 1];
+
+    if(typeof cLine !== "string" || typeof mLine !== "string"){
+      setStatus("Update failed: cannot read current pair lines.");
+      return;
+    }
+
+    const p = curPair();
+
+    // Update only text/tokenization; KEEP alignments array as-is
+    p.classicalLine = cLine;
+    p.modernLine = mLine;
+    p.classicalTokens = tokenize(cLine);
+    p.modernTokens = tokenize(mLine);
+
+    // Refresh workspace tokens/UI for current pair only
+    loadCurrentPairIntoWorkspace();
+
+    // Rebuild dropdown previews (text changed)
+    rebuildPairDropdown();
+    updateNavUI();
+
+    // Note: existing alignments may now reference invalid indices; we keep them (per requirement),
+    // so user can adjust/delete lines as needed.
+    redraw();
+    exportJsAccordingToActiveTab();
+    setStatus(`updated pair ${i+1}/${sentencePairs.length} (alignments preserved)`);
+  }
+
+  // --------------------------
+  // Drag state
+  // --------------------------
+  let drag = {
+    active:false,
+    fromSide:null,
+    fromIdx:null,
+    pointerId:null,
+    shiftMode:false,
+    ctrlMode:false,
+    lastTargetKey:null,
+    hoverToken: null,
+    pointer:{x:0,y:0},
+
+    combineStartIdx:null,
+    combineCurrentIdx:null,
+    combineManySide:null
+  };
+
+  // --------------------------
+  // Token rendering
+  // --------------------------
+  function renderTokens(){
+    const cRow = $("#classicalRow");
+    const mRow = $("#modernRow");
+    cRow.innerHTML = "";
+    mRow.innerHTML = "";
+
+    classicalTokens.forEach((t,i) => {
+      const el = document.createElement("div");
+      el.className = "token";
+      el.dataset.side = "c";
+      el.dataset.idx = String(i);
+      el.innerHTML = `<span class="idx">${i}</span><span class="txt"></span>`;
+      el.querySelector(".txt").textContent = t;
+      cRow.appendChild(el);
+    });
+
+    modernTokens.forEach((t,i) => {
+      const el = document.createElement("div");
+      el.className = "token";
+      el.dataset.side = "m";
+      el.dataset.idx = String(i);
+      el.innerHTML = `<span class="idx">${i}</span><span class="txt"></span>`;
+      el.querySelector(".txt").textContent = t;
+      mRow.appendChild(el);
+    });
+
+    $("#counts").textContent = `c:${classicalTokens.length} m:${modernTokens.length}`;
+  }
+
+  // --------------------------
+  // Canvas overlay
+  // --------------------------
+  function getViewport(){ return $("#canvasViewport"); }
+  function getContent(){ return $("#canvasContent"); }
+  function getCanvas(){ return $("#linkCanvas"); }
+
+  function ensureCanvasesSized(){
+    const vp = getViewport();
+    const linkC = getCanvas();
+
+    const w = Math.max(vp.scrollWidth, vp.clientWidth);
+    const h = Math.max(vp.scrollHeight, vp.clientHeight);
+
+    linkC.style.width = w + "px";
+    linkC.style.height = h + "px";
+    const dpr = window.devicePixelRatio || 1;
+    const bw = Math.floor(w * dpr);
+    const bh = Math.floor(h * dpr);
+    if(linkC.width !== bw || linkC.height !== bh){
+      linkC.width = bw;
+      linkC.height = bh;
+    }
+  }
+
+  function getTokenCenterInContent(side, idx){
+    const row = side === "c" ? $("#classicalRow") : $("#modernRow");
+    const el = row.querySelector(`.token[data-idx="${idx}"]`);
+    if(!el) return null;
+
+    const contentRect = getContent().getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return {
+      x: (r.left - contentRect.left) + r.width/2,
+      y: (r.top - contentRect.top) + r.height/2
+    };
+  }
+
+  function drawLine(ctx, x1,y1,x2,y2, color, width=2.6){
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+  }
+
+  function roundRect(ctx, x, y, w, h, r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawLabel(ctx, x,y, text){
+    if(!text) return;
+    ctx.font = "12px " + getComputedStyle(document.documentElement).getPropertyValue("--mono");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const padX = 8;
+    const metrics = ctx.measureText(text);
+    const w = metrics.width + padX*2;
+    const h = 22;
+
+    ctx.fillStyle = "rgba(0,0,0,.42)";
+    ctx.strokeStyle = "rgba(255,255,255,.14)";
+    ctx.lineWidth = 1;
+    roundRect(ctx, x - w/2, y - h/2, w, h, 9);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(231,236,255,.95)";
+    ctx.fillText(text, x, y+0.5);
+  }
+
+  function applyCombineRangeHighlight(){
+    $$(".token.dragCombine", getContent()).forEach(el => el.classList.remove("dragCombine"));
+    if(!drag.active || !drag.ctrlMode) return;
+    if(drag.combineManySide == null) return;
+    if(drag.combineStartIdx == null || drag.combineCurrentIdx == null) return;
+
+    const s = Math.min(drag.combineStartIdx, drag.combineCurrentIdx);
+    const e = Math.max(drag.combineStartIdx, drag.combineCurrentIdx);
+    for(let i=s;i<=e;i++){
+      const el = getContent().querySelector(`.token[data-side="${drag.combineManySide}"][data-idx="${i}"]`);
+      if(el) el.classList.add("dragCombine");
+    }
+  }
+
+  function redraw(){
+    ensureCanvasesSized();
+
+    const canvas = getCanvas();
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const links = curLinks();
+
+    for(const L of links){
+      const cNum = (typeof L.cIdx === "string" && L.cIdx.includes(",")) ? null :
+                   (typeof L.cIdx === "string") ? Number(L.cIdx) : L.cIdx;
+
+      const mNum = (typeof L.mIdx === "string" && L.mIdx.includes(",")) ? null :
+                   (typeof L.mIdx === "string") ? Number(L.mIdx) : L.mIdx;
+
+      function centerOfRange(side, rangeStr){
+        const parts = String(rangeStr).split(",").map(x => Number(x)).filter(n => Number.isFinite(n));
+        if(parts.length === 0) return null;
+        const min = Math.min(...parts), max = Math.max(...parts);
+        const pA = getTokenCenterInContent(side, min);
+        const pB = getTokenCenterInContent(side, max);
+        if(!pA && !pB) return null;
+        if(pA && pB) return { x:(pA.x+pB.x)/2, y:(pA.y+pB.y)/2 };
+        return pA || pB;
+      }
+
+      let p1 = null, p2 = null;
+
+      if(typeof L.cIdx === "string" && L.cIdx.includes(",")){
+        p1 = centerOfRange("c", L.cIdx);
+      }else if(cNum != null){
+        p1 = getTokenCenterInContent("c", cNum);
+      }
+
+      if(typeof L.mIdx === "string" && L.mIdx.includes(",")){
+        p2 = centerOfRange("m", L.mIdx);
+      }else if(mNum != null){
+        p2 = getTokenCenterInContent("m", mNum);
+      }
+
+      if(!p1 || !p2) continue;
+
+      const isCombine = (typeof L.cIdx === "string" && L.cIdx.includes(",")) || (typeof L.mIdx === "string" && L.mIdx.includes(","));
+      const color = isCombine ? "rgba(251,191,36,.95)"
+                  : (L.code && L.code.length) ? "rgba(122,162,255,.95)"
+                  : "rgba(45,212,191,.95)";
+
+      drawLine(ctx, p1.x,p1.y, p2.x,p2.y, color, 2.8);
+
+      if(L.code){
+        const mx = (p1.x+p2.x)/2;
+        const my = (p1.y+p2.y)/2 - 12;
+        drawLabel(ctx, mx, my, L.code);
+      }
+    }
+
+    if(drag.active){
+      const code = getActiveTypeCode();
+      const p1 = getTokenCenterInContent(drag.fromSide, drag.fromIdx);
+      if(p1){
+        const color = drag.ctrlMode ? "rgba(251,191,36,.70)"
+                    : code ? "rgba(122,162,255,.75)"
+                    : "rgba(45,212,191,.75)";
+        ctx.save();
+        ctx.setLineDash([7,6]);
+        drawLine(ctx, p1.x,p1.y, drag.pointer.x, drag.pointer.y, color, 2.2);
+        ctx.restore();
+
+        if(code){
+          const mx = (p1.x+drag.pointer.x)/2;
+          const my = (p1.y+drag.pointer.y)/2 - 12;
+          drawLabel(ctx, mx, my, code);
+        }
+      }
+    }
+
+    const totalLinks = sentencePairs.reduce((acc,p) => acc + (p.links?.length||0), 0);
+    $("#invMeta").textContent = `pairs:${sentencePairs.length} • links:${totalLinks}`;
+  }
+
+  // --------------------------
+  // Inventory ops
+  // --------------------------
+  function pairKey(cIdx, mIdx){ return `${cIdx}|${mIdx}`; }
+
+  function addOrReplaceLinkForPair(fromSide, fromIdx, toSide, toIdx){
+    const links = curLinks();
+
+    const cRaw = (fromSide === "c") ? fromIdx : toIdx;
+    const mRaw = (fromSide === "m") ? fromIdx : toIdx;
+
+    const code = getActiveTypeCode();
+    const meta = getActiveMetaObject();
+
+    // Addition '+' forces classical index to be string
+    const cIdx = code.includes("+") ? String(cRaw) : cRaw;
+    const mIdx = mRaw;
+
+    const pk = pairKey(cIdx, mIdx);
+    const existingIndex = links.findIndex(L => pairKey(L.cIdx, L.mIdx) === pk);
+
+    const newLink = {
+      id: `L${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      cIdx, mIdx,
+      code,
+      meta,
+      createdAt: Date.now()
+    };
+
+    if(existingIndex !== -1){
+      links[existingIndex] = newLink;
+      return { changed:true, mode:"replaced" };
+    }
+
+    links.push(newLink);
+    return { changed:true, mode:"added" };
+  }
+
+  /**
+   * Ctrl combine-link behavior:
+   * - Range is a comma string "a,b,c"
+   * - Even if range length is 1, still store as STRING "n" on MANY side
+   * - Directional:
+   *   fromSide=="c" => mIdx is many-side string
+   *   fromSide=="m" => cIdx is many-side string
+   */
+  function addOrReplaceCombineLink(fromSide, fromIdx, manyStartIdx, manyEndIdx){
+    const links = curLinks();
+    const code = getActiveTypeCode();
+    const meta = getActiveMetaObject();
+
+    const manySideStr = rangeString(manyStartIdx, manyEndIdx); // always string in ctrl-mode
+
+    let cIdx, mIdx;
+
+    if(fromSide === "c"){
+      const cRaw = fromIdx;
+      cIdx = code.includes("+") ? String(cRaw) : cRaw;
+      mIdx = manySideStr;
+    }else{
+      const mRaw = fromIdx;
+      mIdx = mRaw;
+      cIdx = manySideStr; // always string in ctrl-mode
+    }
+
+    const pk = pairKey(cIdx, mIdx);
+    const existingIndex = links.findIndex(L => pairKey(L.cIdx, L.mIdx) === pk);
+
+    const newLink = {
+      id: `L${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      cIdx, mIdx,
+      code,
+      meta,
+      createdAt: Date.now()
+    };
+
+    if(existingIndex !== -1){
+      links[existingIndex] = newLink;
+      return { changed:true, mode:"replaced" };
+    }
+
+    links.push(newLink);
+    return { changed:true, mode:"added" };
+  }
+
+  function clearLinksThisPair(){
+    if(!hasPairs()) return;
+    curPair().links = [];
+    redraw();
+    exportJsAccordingToActiveTab();
+    setStatus("cleared (this pair)");
+  }
+
+  function clearAllLinks(){
+    sentencePairs.forEach(p => p.links = []);
+    redraw();
+    exportJsAccordingToActiveTab();
+    setStatus("cleared (all pairs)");
+  }
+
+  function removeLinksForToken(side, idx){
+    const links = curLinks();
+    const before = links.length;
+
+    function linkTouchesToken(L){
+      if(side === "c"){
+        if(typeof L.cIdx === "string"){
+          if(L.cIdx.includes(",")) return L.cIdx.split(",").map(Number).some(n => n === idx);
+          return Number(L.cIdx) === idx;
+        }
+        return L.cIdx === idx;
+      }else{
+        if(typeof L.mIdx === "string"){
+          if(L.mIdx.includes(",")) return L.mIdx.split(",").map(Number).some(n => n === idx);
+          return Number(L.mIdx) === idx;
+        }
+        return L.mIdx === idx;
+      }
+    }
+
+    const filtered = links.filter(L => !linkTouchesToken(L));
+    curPair().links = filtered;
+
+    const removed = before - filtered.length;
+    if(removed){
+      redraw();
+      exportJsAccordingToActiveTab();
+      setStatus(`removed ${removed} link(s) from ${side}${idx}`);
+    }else{
+      setStatus("no links on token");
+    }
+    return removed;
+  }
+
+  function removeLinkAtIndex(i){
+    const links = curLinks();
+    if(i < 0 || i >= links.length) return false;
+    links.splice(i, 1);
+    redraw();
+    exportJsAccordingToActiveTab();
+    setStatus("removed link");
+    return true;
+  }
+
+  // --------------------------
+  // Pointer coordinate conversion
+  // --------------------------
+  function pointerToContentXY(e){
+    const contentRect = getContent().getBoundingClientRect();
+    return { x: (e.clientX - contentRect.left), y: (e.clientY - contentRect.top) };
+  }
+
+  // --------------------------
+  // Drag highlight helpers
+  // --------------------------
+  function clearTokenSelection(){
+    $$(".token.selected", getContent()).forEach(el => el.classList.remove("selected"));
+  }
+  function clearDragHighlights(){
+    $$(".token.dragFocus,.token.dragTarget", getContent()).forEach(el => {
+      el.classList.remove("dragFocus");
+      el.classList.remove("dragTarget");
+    });
+    $$(".token.dragCombine", getContent()).forEach(el => el.classList.remove("dragCombine"));
+  }
+  function setDragHighlights(fromSide, fromIdx, hoverToken){
+    clearDragHighlights();
+    const fromEl = getContent().querySelector(`.token[data-side="${fromSide}"][data-idx="${fromIdx}"]`);
+    if(fromEl) fromEl.classList.add("dragFocus");
+    if(hoverToken && hoverToken.side && hoverToken.idx != null){
+      const tEl = getContent().querySelector(`.token[data-side="${hoverToken.side}"][data-idx="${hoverToken.idx}"]`);
+      if(tEl) tEl.classList.add("dragTarget");
+    }
+    applyCombineRangeHighlight();
+  }
+
+  // --------------------------
+  // Drag logic (Pointer Events)
+  // --------------------------
+  function startDrag(tokenEl, e){
+    if(!hasPairs()){
+      setStatus("Load/parse sentence pairs first.");
+      return;
+    }
+    if(e.cancelable) e.preventDefault();
+
+    drag.active = true;
+    drag.fromSide = tokenEl.dataset.side;
+    drag.fromIdx = Number(tokenEl.dataset.idx);
+    drag.pointerId = e.pointerId;
+
+    drag.shiftMode = !!e.shiftKey;
+    drag.ctrlMode = !!(e.ctrlKey);
+
+    drag.lastTargetKey = null;
+    drag.hoverToken = null;
+    drag.combineStartIdx = null;
+    drag.combineCurrentIdx = null;
+    drag.combineManySide = (drag.fromSide === "c") ? "m" : "c";
+
+    clearTokenSelection();
+    tokenEl.classList.add("selected");
+    setDragHighlights(drag.fromSide, drag.fromIdx, null);
+
+    const vp = getViewport();
+    try{ vp.setPointerCapture(e.pointerId); }catch{}
+
+    drag.pointer = pointerToContentXY(e);
+    redraw();
+
+    if(drag.ctrlMode) setStatus("dragging (ctrl combine-link)");
+    else if(drag.shiftMode) setStatus("dragging (shift multi-link)");
+    else setStatus("dragging");
+  }
+
+  function stopDrag(e){
+    if(!drag.active) return;
+    clearTokenSelection();
+    clearDragHighlights();
+    drag.active = false;
+    drag.fromSide = null;
+    drag.fromIdx = null;
+    drag.pointerId = null;
+    drag.shiftMode = false;
+    drag.ctrlMode = false;
+    drag.lastTargetKey = null;
+    drag.hoverToken = null;
+    drag.combineStartIdx = null;
+    drag.combineCurrentIdx = null;
+    drag.combineManySide = null;
+    redraw();
+    setStatus("ready");
+    try{ getViewport().releasePointerCapture(e.pointerId); }catch{}
+  }
+
+  function tokenUnderPointer(clientX, clientY){
+    const under = document.elementFromPoint(clientX, clientY);
+    const token = under?.closest?.(".token");
+    if(!token) return null;
+    return { el: token, side: token.dataset.side, idx: Number(token.dataset.idx) };
+  }
+
+  function handleDragMove(e){
+    if(!drag.active) return;
+    if(e.cancelable) e.preventDefault();
+
+    drag.shiftMode = !!e.shiftKey;
+    drag.ctrlMode = !!e.ctrlKey;
+
+    drag.pointer = pointerToContentXY(e);
+
+    const t = tokenUnderPointer(e.clientX, e.clientY);
+    if(t && t.side && t.side !== drag.fromSide){
+      drag.hoverToken = { side: t.side, idx: t.idx };
+    }else{
+      drag.hoverToken = null;
+    }
+
+    if(drag.ctrlMode){
+      if(drag.hoverToken && drag.hoverToken.side === drag.combineManySide){
+        if(drag.combineStartIdx == null){
+          drag.combineStartIdx = drag.hoverToken.idx;
+          drag.combineCurrentIdx = drag.hoverToken.idx;
+        }else{
+          drag.combineCurrentIdx = drag.hoverToken.idx;
+        }
+      }
+      applyCombineRangeHighlight();
+      setDragHighlights(drag.fromSide, drag.fromIdx, drag.hoverToken);
+      redraw();
+      return;
+    }else{
+      drag.combineStartIdx = null;
+      drag.combineCurrentIdx = null;
+      applyCombineRangeHighlight();
+    }
+
+    setDragHighlights(drag.fromSide, drag.fromIdx, drag.hoverToken);
+
+    if(drag.shiftMode && drag.hoverToken){
+      const toIdx = drag.hoverToken.idx;
+
+      const cRaw = (drag.fromSide === "c") ? drag.fromIdx : toIdx;
+      const mRaw = (drag.fromSide === "m") ? drag.fromIdx : toIdx;
+
+      const code = getActiveTypeCode();
+      const cIdx = code.includes("+") ? String(cRaw) : cRaw;
+
+      const pk = `${cIdx}|${mRaw}`;
+
+      if(pk !== drag.lastTargetKey){
+        const res = addOrReplaceLinkForPair(drag.fromSide, drag.fromIdx, drag.hoverToken.side, toIdx);
+        drag.lastTargetKey = pk;
+        if(res.changed){
+          setStatus(`${res.mode}: c${cRaw} ↔ m${mRaw}${code ? " ("+code+")" : ""}`);
+          exportJsAccordingToActiveTab();
+        }
+      }
+    }
+
+    redraw();
+  }
+
+  function handleDragUp(e){
+    if(!drag.active) return;
+    if(e.cancelable) e.preventDefault();
+
+    if(drag.ctrlMode){
+      let endIdx = drag.combineCurrentIdx;
+      if(endIdx == null){
+        const t = tokenUnderPointer(e.clientX, e.clientY);
+        if(t && t.side === drag.combineManySide) endIdx = t.idx;
+      }
+
+      if(endIdx != null){
+        const startIdx = (drag.combineStartIdx != null) ? drag.combineStartIdx : endIdx;
+        const res = addOrReplaceCombineLink(drag.fromSide, drag.fromIdx, startIdx, endIdx);
+        const code = getActiveTypeCode();
+
+        if(drag.fromSide === "c"){
+          const mStr = rangeString(startIdx, endIdx);
+          setStatus(`${res.mode}: c${drag.fromIdx} ↔ m"${mStr}"${code ? " ("+code+")" : ""}`);
+        }else{
+          const cStr = rangeString(startIdx, endIdx);
+          setStatus(`${res.mode}: c"${cStr}" ↔ m${drag.fromIdx}${code ? " ("+code+")" : ""}`);
+        }
+
+        exportJsAccordingToActiveTab();
+      }else{
+        setStatus("combine-link: drag onto the opposite layer token(s)");
+      }
+      stopDrag(e);
+      return;
+    }
+
+    const t = tokenUnderPointer(e.clientX, e.clientY);
+    if(t){
+      if(t.side && t.side !== drag.fromSide){
+        const res = addOrReplaceLinkForPair(drag.fromSide, drag.fromIdx, t.side, t.idx);
+        const cRaw = (drag.fromSide === "c") ? drag.fromIdx : t.idx;
+        const mRaw = (drag.fromSide === "m") ? drag.fromIdx : t.idx;
+        const code = getActiveTypeCode();
+        setStatus(`${res.mode}: c${cRaw} ↔ m${mRaw}${code ? " ("+code+")" : ""}`);
+        exportJsAccordingToActiveTab();
+      }else{
+        setStatus("Must link across layers (classical ↔ modern).");
+      }
+    }
+
+    stopDrag(e);
+  }
+
+  // --------------------------
+  // Double-click removal (desktop)
+  // --------------------------
+  function clientToContentXY(clientX, clientY){
+    const contentRect = getContent().getBoundingClientRect();
+    return { x: clientX - contentRect.left, y: clientY - contentRect.top };
+  }
+  function distPointToSegment(px,py, ax,ay, bx,by){
+    const abx = bx-ax, aby = by-ay;
+    const apx = px-ax, apy = py-ay;
+    const ab2 = abx*abx + aby*aby;
+    if(ab2 === 0) return Math.hypot(px-ax, py-ay);
+    let t = (apx*abx + apy*aby) / ab2;
+    t = Math.max(0, Math.min(1, t));
+    const cx = ax + t*abx;
+    const cy = ay + t*aby;
+    return Math.hypot(px-cx, py-cy);
+  }
+  function linkRepresentativePoints(L){
+    function centerOfRange(side, rangeStr){
+      const parts = String(rangeStr).split(",").map(x => Number(x)).filter(n => Number.isFinite(n));
+      if(parts.length === 0) return null;
+      const min = Math.min(...parts), max = Math.max(...parts);
+      const pA = getTokenCenterInContent(side, min);
+      const pB = getTokenCenterInContent(side, max);
+      if(!pA && !pB) return null;
+      if(pA && pB) return { x:(pA.x+pB.x)/2, y:(pA.y+pB.y)/2 };
+      return pA || pB;
+    }
+
+    let p1=null, p2=null;
+
+    if(typeof L.cIdx === "string" && L.cIdx.includes(",")) p1 = centerOfRange("c", L.cIdx);
+    else{
+      const cNum = (typeof L.cIdx === "string") ? Number(L.cIdx) : L.cIdx;
+      p1 = getTokenCenterInContent("c", cNum);
+    }
+
+    if(typeof L.mIdx === "string" && L.mIdx.includes(",")) p2 = centerOfRange("m", L.mIdx);
+    else{
+      const mNum = (typeof L.mIdx === "string") ? Number(L.mIdx) : L.mIdx;
+      p2 = getTokenCenterInContent("m", mNum);
+    }
+
+    return {p1,p2};
+  }
+  function hitTestLinkIndex(contentX, contentY){
+    const tol = 8;
+    const links = curLinks();
+    for(let i = links.length - 1; i >= 0; i--){
+      const L = links[i];
+      const {p1,p2} = linkRepresentativePoints(L);
+      if(!p1 || !p2) continue;
+      if(distPointToSegment(contentX, contentY, p1.x,p1.y, p2.x,p2.y) <= tol){
+        return i;
+      }
+    }
+    return -1;
+  }
+  function onWorkspaceDblClick(e){
+    if(e.target.closest?.(".token")) return;
+    const p = clientToContentXY(e.clientX, e.clientY);
+    const idx = hitTestLinkIndex(p.x, p.y);
+    if(idx !== -1){
+      removeLinkAtIndex(idx);
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+  function onTokenDblClick(e){
+    const token = e.target.closest?.(".token");
+    if(!token) return;
+    const side = token.dataset.side;
+    const idx = Number(token.dataset.idx);
+    const removed = removeLinksForToken(side, idx);
+    if(removed){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  // --------------------------
+  // Parse text into sentence pairs
+  // --------------------------
+  function parseTextToPairs(rawText){
+    const raw = (rawText || "").replace(/\r\n/g, "\n");
+    const lines = raw.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+
+    if(lines.length < 2) return { pairs: [], error: "Need at least 2 non-empty lines." };
+    if(lines.length % 2 !== 0) return { pairs: [], error: "Odd number of non-empty lines. Every classical line must have a modern line." };
+
+    const pairs = [];
+    for(let i=0;i<lines.length;i+=2){
+      const classicalLine = lines[i];
+      const modernLine = lines[i+1];
+      pairs.push({
+        classicalLine,
+        modernLine,
+        classicalTokens: tokenize(classicalLine),
+        modernTokens: tokenize(modernLine),
+        links: []
+      });
+    }
+    return { pairs, error: null };
+  }
+
+  function loadPairsIntoPlatform(pairs){
+    sentencePairs = pairs || [];
+    currentPairIndex = clamp(currentPairIndex, 0, Math.max(0, sentencePairs.length - 1));
+
+    rebuildPairDropdown();
+    updateLeftMeta();
+    updateNavUI();
+
+    loadCurrentPairIntoWorkspace();
+    redraw();
+    exportJsAccordingToActiveTab();
+  }
+
+  function loadCurrentPairIntoWorkspace(){
+    if(sentencePairs.length === 0){
+      classicalTokens = [];
+      modernTokens = [];
+      renderTokens();
+      redraw();
+      exportJsAccordingToActiveTab();
+      return;
+    }
+
+    const p = curPair();
+    classicalTokens = p.classicalTokens.slice();
+    modernTokens = p.modernTokens.slice();
+    renderTokens();
+
+    requestAnimationFrame(() => {
+      redraw();
+      ensureCanvasesSized();
+      setStatus(`pair ${currentPairIndex+1}/${sentencePairs.length} loaded`);
+      exportJsAccordingToActiveTab();
+    });
+  }
+
+  // --------------------------
+  // Project Save/Load
+  // --------------------------
+  const PROJECT_VERSION = 1;
+
+  function buildRawTextFromPairs(pairs){
+    return (pairs || []).map(p => `${p.classicalLine}\n${p.modernLine}`).join("\n");
+  }
+  function sanitizeLinks(links){
+    if(!Array.isArray(links)) return [];
+    return links.map(L => ({
+      id: (typeof L.id === "string" ? L.id : `L${Date.now()}_${Math.random().toString(16).slice(2)}`),
+      cIdx: L.cIdx,
+      mIdx: L.mIdx,
+      code: (typeof L.code === "string" ? L.code : ""),
+      meta: (L.meta && typeof L.meta === "object") ? L.meta : null,
+      createdAt: (typeof L.createdAt === "number" ? L.createdAt : Date.now())
+    }));
+  }
+  function buildProjectObject(){
+    const meta = getMeta();
+    const pairs = sentencePairs.map(p => ({
+      classicalLine: p.classicalLine,
+      modernLine: p.modernLine,
+      links: sanitizeLinks(p.links)
+    }));
+
+    return {
+      projectVersion: PROJECT_VERSION,
+      app: "ParallelAlignmentTool",
+      savedAt: new Date().toISOString(),
+      meta,
+      rawText: $("#inputText").value,
+      currentPairIndex: currentPairIndex,
+      pairs
+    };
+  }
+  function downloadProject(){
+    const proj = buildProjectObject();
+    const id = (proj.meta?.id || "project").trim() || "project";
+    const filename = `${id}.project.json`;
+
+    const blob = new Blob([JSON.stringify(proj, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+    setStatus("project saved");
+  }
+  function validateAndHydrateProjectObject(obj){
+    if(!obj || typeof obj !== "object") return { ok:false, error:"Invalid project file (not an object)." };
+
+    const meta = obj.meta;
+    const pairs = obj.pairs;
+
+    if(!meta || typeof meta !== "object") return { ok:false, error:"Invalid project: missing meta." };
+    if(!Array.isArray(pairs)) return { ok:false, error:"Invalid project: missing pairs array." };
+
+    const rebuilt = pairs.map((p) => {
+      const classicalLine = String(p.classicalLine ?? "");
+      const modernLine = String(p.modernLine ?? "");
+      return {
+        classicalLine,
+        modernLine,
+        classicalTokens: tokenize(classicalLine),
+        modernTokens: tokenize(modernLine),
+        links: sanitizeLinks(p.links)
+      };
+    });
+
+    const idx = Number(obj.currentPairIndex);
+    const safeIdx = Number.isFinite(idx) ? clamp(idx, 0, Math.max(0, rebuilt.length - 1)) : 0;
+
+    const rawText = (typeof obj.rawText === "string")
+      ? obj.rawText
+      : buildRawTextFromPairs(rebuilt);
+
+    return { ok:true, meta, rawText, sentencePairs: rebuilt, currentPairIndex: safeIdx };
+  }
+  async function loadProjectFromFile(file){
+    const txt = await file.text();
+    let obj;
+    try{ obj = JSON.parse(txt); }
+    catch{
+      setStatus("load project error: invalid JSON");
+      return;
+    }
+
+    const res = validateAndHydrateProjectObject(obj);
+    if(!res.ok){
+      setStatus("load project error: " + res.error);
+      return;
+    }
+
+    setMeta(res.meta);
+    $("#inputText").value = res.rawText;
+
+    sentencePairs = res.sentencePairs;
+    currentPairIndex = res.currentPairIndex;
+
+    rebuildPairDropdown();
+    updateLeftMeta();
+    updateNavUI();
+	
+	resetAlignmentParamsToDefault(); //reset alignment parameters
+	
+    loadCurrentPairIntoWorkspace();
+    exportJsAccordingToActiveTab();
+
+    setStatus(`project loaded • pairs:${sentencePairs.length} • at:${currentPairIndex+1}`);
+  }
+
+  // --------------------------
+  // Export JS
+  // --------------------------
+  function alignmentToJs(L){
+    const cJs =
+      (typeof L.cIdx === "number") ? String(L.cIdx)
+      : toJsString(L.cIdx);
+    const mJs =
+      (typeof L.mIdx === "number") ? String(L.mIdx)
+      : toJsString(L.mIdx);
+
+    const base = `[${cJs}, ${mJs}, ${toJsString(L.code || "")}`;
+    if(L.meta && Object.keys(L.meta).length){
+      return base + `, ${JSON.stringify(L.meta)}]`;
+    }
+    return base + `]`;
+  }
+
+  function commentForLink(p, L){
+    function tokenTextRange(tokens, idxOrStr){
+      if(typeof idxOrStr === "number") return tokens[idxOrStr] ?? "";
+      const s = String(idxOrStr);
+      if(!s.includes(",")) return tokens[Number(s)] ?? "";
+      const parts = s.split(",").map(Number).filter(n => Number.isFinite(n));
+      return parts.map(i => tokens[i] ?? "").join("");
+    }
+    const cTxt = tokenTextRange(p.classicalTokens, L.cIdx);
+    const mTxt = tokenTextRange(p.modernTokens, L.mIdx);
+    return `//${cTxt}>${mTxt}`;
+  }
+
+  function exportWholeJs(){
+    const meta = getMeta();
+    const chapterId = meta.id || "id_1";
+
+    const chaptersJs =
+`const chapters = [
+  {
+    id: ${toJsString(meta.id)},
+    name: ${toJsString(meta.name)},
+    book: ${toJsString(meta.book)},
+    chapter: ${toJsString(meta.chapter)},
+    author: ${toJsString(meta.author)},
+    era: ${toJsString(meta.era)}
+  }
+];`;
+
+    const sentenceObjs = sentencePairs.map((p, idx) => {
+      const sentenceId = makeSentenceId(chapterId, idx+1);
+
+      const sorted = (p.links || [])
+        .slice()
+        .sort((a,b) => {
+          const ac = (typeof a.cIdx === "string" && a.cIdx.includes(",")) ? Number(a.cIdx.split(",")[0]) :
+                     (typeof a.cIdx === "string") ? Number(a.cIdx) : a.cIdx;
+          const bc = (typeof b.cIdx === "string" && b.cIdx.includes(",")) ? Number(b.cIdx.split(",")[0]) :
+                     (typeof b.cIdx === "string") ? Number(b.cIdx) : b.cIdx;
+
+          const am = (typeof a.mIdx === "string" && a.mIdx.includes(",")) ? Number(a.mIdx.split(",")[0]) :
+                     (typeof a.mIdx === "string") ? Number(a.mIdx) : a.mIdx;
+          const bm = (typeof b.mIdx === "string" && b.mIdx.includes(",")) ? Number(b.mIdx.split(",")[0]) :
+                     (typeof b.mIdx === "string") ? Number(b.mIdx) : b.mIdx;
+
+          return (ac-bc) || (am-bm) || ((a.code||"").localeCompare(b.code||""));
+        });
+
+      const alignLines = sorted.map(L => `        ${alignmentToJs(L)}, ${commentForLink(p, L)}`);
+
+      return `    {
+      id: ${toJsString(sentenceId)},
+      classical: ${formatJsArrayOfStrings(p.classicalTokens)},
+      modern: ${formatJsArrayOfStrings(p.modernTokens)},
+      alignments: [
+${alignLines.join("\n")}
+      ]
+    }`;
+    }).join(",\n");
+
+    const sentencesJs =
+`const sentencesByChapter = {
+  ${toJsString(chapterId)}: [
+${sentenceObjs}
+  ]
+};`;
+
+    return chaptersJs + "\n\n" + sentencesJs;
+  }
+
+  function exportFocusJs(){
+    const meta = getMeta();
+    const chapterId = meta.id || "id_1";
+    const idx = currentPairIndex;
+
+    const chaptersJs =
+`const chapters = [
+  {
+    id: ${toJsString(meta.id)},
+    name: ${toJsString(meta.name)},
+    book: ${toJsString(meta.book)},
+    chapter: ${toJsString(meta.chapter)},
+    author: ${toJsString(meta.author)},
+    era: ${toJsString(meta.era)}
+  }
+];`;
+
+    if(!hasPairs()){
+      return chaptersJs + "\n\n" + `const sentencesByChapter = { ${toJsString(chapterId)}: [] };`;
+    }
+
+    const p = curPair();
+    const sentenceId = makeSentenceId(chapterId, idx+1);
+
+    const sorted = (p.links || [])
+      .slice()
+      .sort((a,b) => {
+        const ac = (typeof a.cIdx === "string" && a.cIdx.includes(",")) ? Number(a.cIdx.split(",")[0]) :
+                   (typeof a.cIdx === "string") ? Number(a.cIdx) : a.cIdx;
+        const bc = (typeof b.cIdx === "string" && b.cIdx.includes(",")) ? Number(b.cIdx.split(",")[0]) :
+                   (typeof b.cIdx === "string") ? Number(b.cIdx) : b.cIdx;
+
+        const am = (typeof a.mIdx === "string" && a.mIdx.includes(",")) ? Number(a.mIdx.split(",")[0]) :
+                   (typeof a.mIdx === "string") ? Number(a.mIdx) : a.mIdx;
+        const bm = (typeof b.mIdx === "string" && b.mIdx.includes(",")) ? Number(b.mIdx.split(",")[0]) :
+                   (typeof b.mIdx === "string") ? Number(b.mIdx) : b.mIdx;
+
+        return (ac-bc) || (am-bm) || ((a.code||"").localeCompare(b.code||""));
+      });
+
+    const alignLines = sorted.map(L => `      ${alignmentToJs(L)}, ${commentForLink(p, L)}`);
+
+    const sentencesJs =
+`const sentencesByChapter = {
+  ${toJsString(chapterId)}: [
+    {
+      id: ${toJsString(sentenceId)},
+      classical: ${formatJsArrayOfStrings(p.classicalTokens)},
+      modern: ${formatJsArrayOfStrings(p.modernTokens)},
+      alignments: [
+${alignLines.join("\n")}
+      ]
+    }
+  ]
+};`;
+
+    return chaptersJs + "\n\n" + sentencesJs;
+  }
+
+  let activeTab = "whole";
+  function setTab(tab){
+    activeTab = tab;
+    $("#tabWhole").classList.toggle("active", tab === "whole");
+    $("#tabFocus").classList.toggle("active", tab === "focus");
+    exportJsAccordingToActiveTab();
+  }
+  function exportJsAccordingToActiveTab(){
+    const js = (activeTab === "focus") ? exportFocusJs() : exportWholeJs();
+    $("#jsonOut").value = js;
+    redraw();
+  }
+
+  function downloadJs(){
+    const js = (activeTab === "focus") ? exportFocusJs() : exportWholeJs();
+    const chapterId = (getMeta().id || "chapter").trim() || "chapter";
+    const filename = `${chapterId}.txt`;
+
+    const blob = new Blob([js], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+
+  async function copyOutput(){
+    const txt = $("#jsonOut").value;
+    try{
+      await navigator.clipboard.writeText(txt);
+      setStatus("copied");
+    }catch{
+      $("#jsonOut").focus();
+      $("#jsonOut").select();
+      document.execCommand("copy");
+      setStatus("copied (fallback)");
+    }
+  }
+
+  // --------------------------
+  // Navigation
+  // --------------------------
+  function goToPairIndex(idx){
+    if(!hasPairs()) return;
+    const next = clamp(idx, 0, sentencePairs.length - 1);
+    if(next === currentPairIndex) return;
+
+    currentPairIndex = next;
+
+    // Reset alignment parameters when moving to a different sentence pair
+    resetAlignmentParamsToDefault();
+
+    updateNavUI();
+    loadCurrentPairIntoWorkspace();
+  }
+  
+  function goToPairOneBased(n){
+    if(!hasPairs()) return;
+    const num = Number(String(n).trim());
+    if(!Number.isFinite(num)) return;
+    goToPairIndex(num - 1);
+  }
+
+  $("#selPair").addEventListener("change", (e) => {
+    const v = Number(e.target.value);
+    if(Number.isFinite(v)) goToPairIndex(v);
+  });
+  $("#btnPrev").addEventListener("click", () => goToPairIndex(currentPairIndex - 1));
+  $("#btnNext").addEventListener("click", () => goToPairIndex(currentPairIndex + 1));
+  $("#btnGoto").addEventListener("click", () => goToPairOneBased($("#txtGoto").value));
+  $("#txtGoto").addEventListener("keydown", (e) => { if(e.key === "Enter") goToPairOneBased($("#txtGoto").value); });
+
+  // --------------------------
+  // File loading + parsing
+  // --------------------------
+  $("#btnLoadFile").addEventListener("click", () => $("#fileInput").click());
+
+  $("#fileInput").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+
+    setMetaIdFromFilename(file.name);
+
+    const text = await file.text();
+    $("#inputText").value = text;
+
+    const { pairs, error } = parseTextToPairs(text);
+    if(error){
+      setStatus("parse error: " + error);
+      return;
+    }
+    currentPairIndex = 0;
+    loadPairsIntoPlatform(pairs);
+	resetAlignmentParamsToDefault(); //reset alignment parameters
+    setStatus(`loaded file • pairs:${pairs.length}`);
+  });
+
+  $("#btnParse").addEventListener("click", () => {
+    const text = $("#inputText").value;
+    const { pairs, error } = parseTextToPairs(text);
+    if(error){
+      setStatus("parse error: " + error);
+      return;
+    }
+    currentPairIndex = 0;
+    loadPairsIntoPlatform(pairs);
+	resetAlignmentParamsToDefault(); //reset alignment parameters
+    setStatus(`parsed • pairs:${pairs.length}`);
+  });
+
+  $("#btnUpdateCurrentPair").addEventListener("click", updateCurrentPairFromTextBox);
+
+  $("#btnNewEmpty").addEventListener("click", () => {
+    sentencePairs = [];
+    currentPairIndex = 0;
+    $("#inputText").value = "";
+    updateLeftMeta();
+    rebuildPairDropdown();
+    updateNavUI();
+    classicalTokens = [];
+    modernTokens = [];
+    renderTokens();
+    redraw();
+    exportJsAccordingToActiveTab();
+    setStatus("reset");
+  });
+
+  $("#btnClearAllLinks").addEventListener("click", clearAllLinks);
+  $("#btnClearLinksThis").addEventListener("click", clearLinksThisPair);
+  $("#btnExport").addEventListener("click", exportJsAccordingToActiveTab);
+
+  // --------------------------
+  // Project Save/Load
+  // --------------------------
+  $("#btnSaveProject").addEventListener("click", downloadProject);
+  $("#btnLoadProject").addEventListener("click", () => $("#projectInput").click());
+  $("#projectInput").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    await loadProjectFromFile(file);
+    e.target.value = "";
+  });
+
+  // --------------------------
+  // Workspace events
+  // --------------------------
+  const vp = $("#canvasViewport");
+  const content = $("#canvasContent");
+
+  content.addEventListener("pointerdown", (e) => {
+    const token = e.target.closest?.(".token");
+    if(!token) return;
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    startDrag(token, e);
+  }, { passive: false });
+
+  vp.addEventListener("pointermove", handleDragMove, { passive: false });
+  vp.addEventListener("pointerup", handleDragUp, { passive: false });
+  vp.addEventListener("pointercancel", stopDrag, { passive: true });
+
+  vp.addEventListener("dblclick", onWorkspaceDblClick);
+  content.addEventListener("dblclick", onTokenDblClick);
+
+  vp.addEventListener("scroll", () => redraw(), {passive:true});
+  window.addEventListener("resize", () => redraw(), {passive:true});
+
+  // --------------------------
+  // Tabs + export controls
+  // --------------------------
+  $("#tabWhole").addEventListener("click", () => setTab("whole"));
+  $("#tabFocus").addEventListener("click", () => setTab("focus"));
+  $("#btnDownload").addEventListener("click", downloadJs);
+  $("#btnCopy").addEventListener("click", copyOutput);
+
+  $("#tabText").addEventListener("click", () => setLeftTab("text"));
+  $("#tabMeta").addEventListener("click", () => setLeftTab("meta"));
+
+  ["meta_id","meta_name","meta_book","meta_chapter","meta_author","meta_era"].forEach(id => {
+    $("#"+id).addEventListener("input", () => exportJsAccordingToActiveTab());
+  });
+
+  // --------------------------
+  // Panel resizing
+  // --------------------------
+  const paneLeft = $("#paneLeft");
+  const paneMid = $("#paneMid");
+  const paneRight = $("#paneRight");
+
+  function setupSplitter(splitterEl, leftPaneEl, rightPaneEl){
+    let active = false;
+    let startX = 0;
+    let startLeftW = 0;
+    let startRightW = 0;
+
+    function onDown(e){
+      if(window.matchMedia("(max-width: 1100px)").matches) return;
+      active = true;
+      startX = e.clientX;
+      const lRect = leftPaneEl.getBoundingClientRect();
+      const rRect = rightPaneEl.getBoundingClientRect();
+      startLeftW = lRect.width;
+      startRightW = rRect.width;
+      splitterEl.setPointerCapture(e.pointerId);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      e.preventDefault();
+    }
+
+    function onMove(e){
+      if(!active) return;
+      const dx = e.clientX - startX;
+
+      const total = startLeftW + startRightW;
+      const minLeft = 240;
+      const minRight = 240;
+
+      let newLeft = startLeftW + dx;
+      let newRight = total - newLeft;
+
+      if(newLeft < minLeft){
+        newLeft = minLeft;
+        newRight = total - newLeft;
+      }else if(newRight < minRight){
+        newRight = minRight;
+        newLeft = total - newRight;
+      }
+
+      leftPaneEl.style.width = `${newLeft}px`;
+      rightPaneEl.style.width = `${newRight}px`;
+
+      requestAnimationFrame(() => redraw());
+    }
+
+    function onUp(e){
+      if(!active) return;
+      active = false;
+      try{ splitterEl.releasePointerCapture(e.pointerId); }catch{}
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      requestAnimationFrame(() => redraw());
+    }
+
+    splitterEl.addEventListener("pointerdown", onDown);
+    splitterEl.addEventListener("pointermove", onMove);
+    splitterEl.addEventListener("pointerup", onUp);
+    splitterEl.addEventListener("pointercancel", onUp);
+    splitterEl.addEventListener("dblclick", (e) => e.preventDefault());
+  }
+
+  setupSplitter($("#splitLM"), paneLeft, paneMid);
+  setupSplitter($("#splitMR"), paneMid, paneRight);
+
+  // --------------------------
+  // Help content (EN / 中文) — UPDATED with new feature
+  // --------------------------
+  function helpHtmlEN(){
+    return `
+      <div class="callout">
+        <div><b>Quick Start</b></div>
+        <ol>
+          <li>Load a <code>.txt</code> file (odd lines = Classical, even lines = Modern), or paste text into the <b>Text</b> tab.</li>
+          <li>Click <b>Parse &amp; Store Pairs</b>.</li>
+          <li>In <b>Workspace</b>, drag a token from one layer to the other to create an alignment.</li>
+          <li>Use the <b>Whole</b> / <b>Focus</b> tabs in <b>JS Output</b> to download or copy your results.</li>
+        </ol>
+        <div class="muted">Tip: On touch devices, drag with finger. Keyboard modifiers are desktop-only.</div>
+      </div>
+
+      <h2>1) The Three Panels</h2>
+      <div class="grid2">
+        <div class="callout">
+          <h3>Left Panel — Input</h3>
+          <p>Manages source text and chapter metadata.</p>
+          <ul>
+            <li><b>Text tab</b>: load/paste text and manage projects; also supports updating only the current pair.</li>
+            <li><b>Metadata tab</b>: set chapter-level info used in exported JS.</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <h3>Middle Panel — Workspace</h3>
+          <p>Main alignment interface. Displays two token rows (Classical and Modern) and draws alignment lines.</p>
+          <ul>
+            <li>Navigate sentence pairs.</li>
+            <li>Select alignment types and optional objects.</li>
+            <li>Create/delete/replace alignments via dragging.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:12px;">
+        <h3>Right Panel — JS Output</h3>
+        <p>Shows export-ready JavaScript. Two tabs:</p>
+        <ul>
+          <li><b>Whole</b>: exports every sentence pair.</li>
+          <li><b>Focus (Current Pair)</b>: exports only the currently selected pair.</li>
+        </ul>
+        <p>Buttons:</p>
+        <ul>
+          <li><b>Download JS</b>: downloads a <code>.js</code> file.</li>
+          <li><b>Copy</b>: copies the JS text to clipboard.</li>
+        </ul>
+      </div>
+
+      <h2>2) Left Panel Tabs &amp; Buttons</h2>
+      <h3>Text tab</h3>
+      <ul>
+        <li><b>Load Text File (.txt)</b>: load a plain text file. The filename (without extension) is used as default <code>meta.id</code>.</li>
+        <li><b>Parse &amp; Store Pairs</b>: convert text into sentence pairs (odd=classical, even=modern). Clears existing pairs and rebuilds the workspace.</li>
+        <li><b>Save Project</b>: saves a <code>.project.json</code> including text, metadata, alignments, and current pair index.</li>
+        <li><b>Load Project</b>: loads a previously saved <code>.project.json</code>.</li>
+        <li><b>Update Current Pair (Re-parse)</b>: re-parses ONLY the current sentence pair from the text box and refreshes tokens in the workspace, while preserving all alignments in other pairs (and also preserving the current pair’s alignments).</li>
+        <li><b>New / Reset</b>: clears all data from the platform (text, pairs, alignments).</li>
+        <li><b>Clear All Alignments</b>: removes all alignment links across all sentence pairs (text remains unchanged).</li>
+        <li><b>Convert</b>: refreshes the JS output view.</li>
+      </ul>
+
+      <div class="callout">
+        <b>Important (Update Current Pair)</b>
+        <ul>
+          <li>The text box must still contain the <b>same number</b> of non-empty lines as the currently loaded sentence pairs.</li>
+          <li>If you added/removed lines (pair count changed), use <b>Parse &amp; Store Pairs</b> instead.</li>
+          <li>Existing alignments are preserved even if token indices become mismatched after editing; you can delete/redo specific links if needed.</li>
+        </ul>
+      </div>
+
+      <h3>Metadata tab</h3>
+      <p>These fields export into <code>const chapters = [...]</code> and determine the key <code>sentencesByChapter[meta.id]</code>:</p>
+      <ul>
+        <li><b>id</b>, <b>name</b>, <b>book</b>, <b>chapter</b>, <b>author</b>, <b>era</b></li>
+      </ul>
+
+      <h2>3) Workspace: Navigation &amp; Editing</h2>
+      <h3>Sentence Pair Navigation</h3>
+      <ul>
+        <li><b>sentence pair dropdown</b>: jump to a pair directly.</li>
+        <li><b>&lt;</b> / <b>&gt;</b>: previous / next pair.</li>
+        <li><b>Go</b>: type a 1-based number to jump to a pair.</li>
+		<li><b>Note:</b> when you switch to a different sentence pair, the tool <b>resets alignment parameters</b> to defaults (natural checked; all other types unchecked; scope(s)=(empty); note=1 with empty content; group=1; frame=1).</li>
+      </ul>
+
+      <h3>Create Alignments (Drag)</h3>
+      <ul>
+        <li><b>Normal drag</b>: drag a token from Classical to Modern (or reverse) and release on a target token to create a link.</li>
+        <li><b>Shift + drag</b> (multi-link): while holding <code>Shift</code>, drag across multiple targets to create multiple one-to-one links.</li>
+        <li><b>Ctrl + drag</b> (combine-link): while holding <code>Ctrl</code>, drag from a token to create a one-to-many range on the opposite layer.</li>
+      </ul>
+
+      <div class="callout">
+        <b>Ctrl combine-link detail (important)</b>
+        <ul>
+          <li>Range is exported as a quoted string, e.g. <code>"0,1,2"</code>.</li>
+          <li><b>Even if you select only one token in Ctrl mode</b>, it is still exported as a quoted string, e.g. <code>"0"</code>.</li>
+        </ul>
+        <div class="muted">
+          Example (Ctrl + ellipsis <code>-</code>, drag <code>c0</code> → <code>m0</code>):<br>
+          <code>[0, "0", "-"]</code>
+        </div>
+      </div>
+
+      <h3>Replace Alignments</h3>
+      <ul>
+        <li>If you create another link with the <b>same</b> <code>cIdx</code> and <code>mIdx</code>, the tool <b>replaces</b> the previous one (updates type/meta).</li>
+      </ul>
+
+      <h3>Remove Alignments</h3>
+      <ul>
+        <li><b>Double-click a line</b> to delete that alignment.</li>
+        <li><b>Double-click a token</b> to delete <b>all</b> alignments touching that token.</li>
+        <li><b>Clear Alignments (This Pair)</b> removes all links for the current sentence pair only.</li>
+        <li><b>Clear All Alignments</b> removes links for all pairs.</li>
+      </ul>
+
+      <h2>4) Alignment Types &amp; Related Objects</h2>
+      <p>Alignment output format per link:</p>
+      <div class="callout"><code>[cIdx, mIdx, "code", meta?]</code></div>
+
+      <h3>Type codes (8)</h3>
+      <ul>
+        <li><b>natural</b>: <code>""</code> (no code; default)</li>
+        <li><b>ellipsis</b>: <code>"-"</code></li>
+        <li><b>addition</b>: <code>"+"</code> (forces <code>cIdx</code> to export as a string)</li>
+        <li><b>paraphrasing</b>: <code>"#"</code> (supports <code>meta.note</code>)</li>
+        <li><b>reorder</b>: <code>"^"</code> (supports <code>meta.group</code>)</li>
+        <li><b>restructure</b>: <code>"x"</code> (supports <code>meta.frame</code>)</li>
+        <li><b>borrow</b>: <code>"~"</code></li>
+        <li><b>derivate</b>: <code>"*"</code></li>
+      </ul>
+
+      <h3>Related meta objects</h3>
+      <ul>
+        <li><b>scope / scopes</b>: applies to all alignments. Choose one to export <code>{scope:n}</code>, choose multiple to export <code>{scopes:[...]}</code>.</li>
+        <li><b>note</b> (when paraphrasing <code>#</code> is enabled): exports <code>{note:n}</code> or <code>{note:[n,"text"]}</code>.</li>
+        <li><b>group</b> (when reorder <code>^</code> is enabled): exports <code>{group:n}</code>.</li>
+        <li><b>frame</b> (when restructure <code>x</code> is enabled): exports <code>{frame:n}</code>.</li>
+      </ul>
+
+      <h2>5) Keyboard Combinations</h2>
+      <ul>
+        <li><code>Shift</code>: multi-link (many one-to-one links while dragging).</li>
+        <li><code>Ctrl</code>: combine-link (one-to-many range; always quotes the many-side index string).</li>
+        <li><code>Shift + Ctrl</code>: not recommended; behavior may depend on browser. Prefer using only one mode at a time.</li>
+      </ul>
+
+      <h2>6) Export &amp; Output</h2>
+      <ul>
+        <li><b>Whole</b> tab: export all sentence pairs.</li>
+        <li><b>Focus</b> tab: export only the currently selected pair.</li>
+        <li><b>Download JS</b>: downloads the JS file.</li>
+        <li><b>Copy</b>: copies output to clipboard.</li>
+      </ul>
+
+      <h2>Credits</h2>
+      <div class="callout">
+        <div><b>Designer:</b> 林葦葉 LAM Wai Ip (HKU)</div>
+        <div><b>Developer:</b> GPT 5.2 (Anthropic)</div>
+        <div><b>Date:</b> ${BUILD_DATE}</div>
+        <div><b>Version:</b> ${APP_VERSION_SHORT}</div>
+        <div><b>Theoretical Framework:</b> 文白對譯 Classical to Chinese Parallel Translation</div>
+      </div>
+
+      <h2>License &amp; Citation</h2>
+      <div class="callout">
+        <p>This application is provided free of charge for educational and research purposes.</p>
+        <p>If you use this application in your research or teaching, please cite:</p>
+        <p><i>Lam, W. I. (2026). Classical to Modern Chinese Parallel Translation Alignment Tool (Version 21.0) [Web Application]. The University of Hong Kong. Based on LAM, W.I. (2016). 對譯—文言作品的教學策略.</i></p>
+      </div>
+
+      <h2>Feedback &amp; Support</h2>
+      <div class="callout">
+        <p>For questions, bug reports, feature requests, or collaboration opportunities, please contact:</p>
+        <p>📧 Official: <code>jwilam@hku.hk</code><br>📧 Personal: <code>jwilam@gmail.com</code></p>
+        <p>We welcome your feedback to improve this platform! Report bugs, suggest features, or share your use cases.</p>
+      </div>
+    `;
+  }
+
+  function helpHtmlZH(){
+    return `
+      <div class="callout">
+        <div><b>快速上手</b></div>
+        <ol>
+          <li>載入 <code>.txt</code>（奇數行=文言／Classical；偶數行=白話／Modern），或直接貼上文字到<b>Text</b>分頁。</li>
+          <li>按 <b>Parse &amp; Store Pairs</b> 生成句對。</li>
+          <li>到<b>Workspace</b>：把上層／下層 token 拖到對方 token 上，建立對齊線。</li>
+          <li>在<b>JS Output</b> 用 <b>Whole</b>／<b>Focus</b> 下載或複製輸出。</li>
+        </ol>
+        <div class="muted">提示：手機／平板可直接用手指拖曳；鍵盤 Shift/Ctrl 主要在桌面版使用。</div>
+      </div>
+
+      <h2>1）三大面板</h2>
+      <div class="grid2">
+        <div class="callout">
+          <h3>左面板 — Input（輸入）</h3>
+          <p>管理原文與章節 metadata。</p>
+          <ul>
+            <li><b>Text</b>：載入／貼上文本與專案管理；亦可只更新目前句對。</li>
+            <li><b>Metadata</b>：設定章節資訊，會寫入輸出 JS。</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <h3>中面板 — Workspace（工作區）</h3>
+          <p>主要對齊操作區：上層（Classical）與下層（Modern）token，並顯示對齊線。</p>
+          <ul>
+            <li>切換句對（sentence pair）。</li>
+            <li>選擇對齊類型與附加物件（meta）。</li>
+            <li>拖曳建立／刪除／替換對齊線。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:12px;">
+        <h3>右面板 — JS Output（輸出）</h3>
+        <p>顯示可直接使用的 JavaScript。兩個分頁：</p>
+        <ul>
+          <li><b>Whole</b>：輸出全部句對。</li>
+          <li><b>Focus (Current Pair)</b>：只輸出當前句對。</li>
+        </ul>
+        <p>按鈕：</p>
+        <ul>
+          <li><b>Download JS</b>：下載 <code>.js</code> 檔。</li>
+          <li><b>Copy</b>：複製輸出到剪貼簿。</li>
+        </ul>
+      </div>
+
+      <h2>2）左面板：分頁與按鈕</h2>
+      <h3>Text 分頁</h3>
+      <ul>
+        <li><b>Load Text File (.txt)</b>：載入純文字檔；檔名（不含副檔名）會自動作為 <code>meta.id</code> 建議值。</li>
+        <li><b>Parse &amp; Store Pairs</b>：把文本轉為句對（奇=文言、偶=白話），並建立工作區 token。</li>
+        <li><b>Save Project</b>：儲存 <code>.project.json</code>（包含文本、metadata、所有對齊線與當前句對位置）。</li>
+        <li><b>Load Project</b>：載入先前儲存的 <code>.project.json</code>。</li>
+        <li><b>Update Current Pair (Re-parse)</b>：只重新解析「目前句對」的兩行文字並更新工作區 token；<b>其他句對與其對齊線完全不受影響</b>，目前句對的對齊線亦會保留。</li>
+        <li><b>New / Reset</b>：清空平台資料（文本／句對／對齊線）。</li>
+        <li><b>Clear All Alignments</b>：清除全部句對的對齊線（文本不變）。</li>
+        <li><b>Convert</b>：刷新／更新輸出區 JS。</li>
+      </ul>
+
+      <div class="callout">
+        <b>注意（Update Current Pair）</b>
+        <ul>
+          <li>Text 文字框中的「非空行數」必須仍然等於目前平台句對總數 × 2。</li>
+          <li>若你新增／刪除行（句對數改變），請改用 <b>Parse &amp; Store Pairs</b> 重新建立。</li>
+          <li>更新後若 token 數量改變，舊對齊線會保留但可能出現 index 不匹配；可按需要刪除／重做個別對齊。</li>
+        </ul>
+      </div>
+
+      <h3>Metadata 分頁</h3>
+      <p>以下欄位會寫入 <code>const chapters = [...]</code>，並決定輸出 key：<code>sentencesByChapter[meta.id]</code>：</p>
+      <ul>
+        <li><b>id</b>, <b>name</b>, <b>book</b>, <b>chapter</b>, <b>author</b>, <b>era</b></li>
+      </ul>
+
+      <h2>3）工作區：句對切換與對齊操作</h2>
+      <h3>句對切換</h3>
+      <ul>
+        <li><b>sentence pair 下拉</b>：直接跳到某句對。</li>
+        <li><b>&lt;</b> / <b>&gt;</b>：上一句對／下一句對。</li>
+        <li><b>Go</b>：輸入 1 起算的句對編號跳轉。</li>
+		<li><b>注意：</b>當你切換到另一個句對時，系統會<b>自動重置對齊參數</b>為預設值（natural 勾選；其餘類型全部取消；scope(s)=(empty)；note=1 且內容為空；group=1；frame=1）。</li>
+      </ul>
+
+      <h3>建立對齊（拖曳）</h3>
+      <ul>
+        <li><b>一般拖曳</b>：把 Classical token 拖到 Modern token（或反向）建立一條對齊。</li>
+        <li><b>Shift + 拖曳</b>（multi-link）：拖曳途中掃過多個目標，可連續建立多條一對一對齊。</li>
+        <li><b>Ctrl + 拖曳</b>（combine-link）：建立「一對多」範圍（range）對齊。</li>
+      </ul>
+
+      <div class="callout">
+        <b>Ctrl combine-link 重要規則</b>
+        <ul>
+          <li>範圍會以字串輸出，例如 <code>"0,1,2"</code>。</li>
+          <li><b>即使只選到 1 個 token（單點）</b>，在 Ctrl 模式仍會輸出為字串，例如 <code>"0"</code>。</li>
+        </ul>
+        <div class="muted">
+          例：選 ellipsis <code>-</code>，按 Ctrl 把 <code>c0</code> 拖到 <code>m0</code>：<br>
+          <code>[0, "0", "-"]</code>
+        </div>
+      </div>
+
+      <h3>替換對齊</h3>
+      <ul>
+        <li>若建立「相同 <code>cIdx</code> 與 <code>mIdx</code>」的對齊，系統會<b>自動替換</b>舊的那條（更新 code/meta）。</li>
+      </ul>
+
+      <h3>刪除對齊</h3>
+      <ul>
+        <li><b>雙擊線段</b>：刪除該條對齊。</li>
+        <li><b>雙擊 token</b>：刪除所有連到該 token 的對齊。</li>
+        <li><b>Clear Alignments (This Pair)</b>：只清除當前句對的所有對齊。</li>
+        <li><b>Clear All Alignments</b>：清除所有句對的對齊。</li>
+      </ul>
+
+      <h2>4）八種對齊類型與相關物件</h2>
+      <p>每條對齊的輸出格式：</p>
+      <div class="callout"><code>[cIdx, mIdx, "code", meta?]</code></div>
+
+      <h3>8 種 type code</h3>
+      <ul>
+        <li><b>natural</b>：<code>""</code>（預設）</li>
+        <li><b>ellipsis</b>：<code>"-"</code></li>
+        <li><b>addition</b>：<code>"+"</code>（會令 <code>cIdx</code> 以字串輸出）</li>
+        <li><b>paraphrasing</b>：<code>"#"</code>（支援 <code>meta.note</code>）</li>
+        <li><b>reorder</b>：<code>"^"</code>（支援 <code>meta.group</code>）</li>
+        <li><b>restructure</b>：<code>"x"</code>（支援 <code>meta.frame</code>）</li>
+        <li><b>borrow</b>：<code>"~"</code></li>
+        <li><b>derivate</b>：<code>"*"</code></li>
+      </ul>
+
+      <h3>相關 meta 物件</h3>
+      <ul>
+        <li><b>scope / scopes</b>：套用到所有對齊。選 1 個輸出 <code>{scope:n}</code>；選多個輸出 <code>{scopes:[...]}</code>。</li>
+        <li><b>note</b>（啟用 paraphrasing <code>#</code> 時）：輸出 <code>{note:n}</code> 或 <code>{note:[n,"內容"]}</code>。</li>
+        <li><b>group</b>（啟用 reorder <code>^</code> 時）：輸出 <code>{group:n}</code>。</li>
+        <li><b>frame</b>（啟用 restructure <code>x</code> 時）：輸出 <code>{frame:n}</code>。</li>
+      </ul>
+
+      <h2>5）鍵盤組合</h2>
+      <ul>
+        <li><code>Shift</code>：multi-link（多條一對一）。</li>
+        <li><code>Ctrl</code>：combine-link（對方層以字串輸出範圍；單點亦會加引號）。</li>
+        <li><code>Shift + Ctrl</code>：不建議同時使用，可能因瀏覽器差異出現不一致。</li>
+      </ul>
+
+      <h2>6）輸出與下載</h2>
+      <ul>
+        <li><b>Whole</b>：輸出全部句對。</li>
+        <li><b>Focus</b>：只輸出當前句對。</li>
+        <li><b>Download JS</b>：下載 JS 檔。</li>
+        <li><b>Copy</b>：複製到剪貼簿。</li>
+      </ul>
+
+      <h2>Credits</h2>
+      <div class="callout">
+        <div><b>Designer:</b> 林葦葉 LAM Wai Ip (HKU)</div>
+        <div><b>Developer:</b> GPT 5.2 (Anthropic)</div>
+        <div><b>Date:</b> ${BUILD_DATE}</div>
+        <div><b>Version:</b> ${APP_VERSION_SHORT}</div>
+        <div><b>Theoretical Framework:</b> 文白對譯 Classical to Chinese Parallel Translation</div>
+      </div>
+
+      <h2>License &amp; Citation</h2>
+      <div class="callout">
+        <p>本工具免費提供作教育及研究用途。</p>
+        <p>如用於研究或教學，請引用：</p>
+        <p><i>Lam, W. I. (2026). Classical to Modern Chinese Parallel Translation Alignment Tool (Version 21.0) [Web Application]. The University of Hong Kong. Based on LAM, W.I. (2016). 對譯—文言作品的教學策略.</i></p>
+      </div>
+
+      <h2>Feedback &amp; Support</h2>
+      <div class="callout">
+        <p>如有問題、錯誤回報、功能建議或合作，請聯絡：</p>
+        <p>📧 Official: <code>jwilam@hku.hk</code><br>📧 Personal: <code>jwilam@gmail.com</code></p>
+        <p>歡迎回饋以改進平台：回報 bug、提出新功能、分享使用情境。</p>
+      </div>
+    `;
+  }
+
+  let helpLang = "en";
+  function renderHelp(){
+    $("#helpBody").innerHTML = (helpLang === "en") ? helpHtmlEN() : helpHtmlZH();
+    $("#btnHelpLang").textContent = (helpLang === "en") ? "中文" : "English";
+  }
+
+  function openHelp(){
+    renderHelp();
+    $("#helpOverlay").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeHelp(){
+    $("#helpOverlay").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  $("#btnHelp").addEventListener("click", openHelp);
+  $("#btnHelpClose").addEventListener("click", closeHelp);
+  $("#btnHelpLang").addEventListener("click", () => {
+    helpLang = (helpLang === "en") ? "zh" : "en";
+    renderHelp();
+  });
+  $("#helpOverlay").addEventListener("click", (e) => {
+    if(e.target === $("#helpOverlay")) closeHelp();
+  });
+  window.addEventListener("keydown", (e) => {
+    if(e.key === "Escape" && $("#helpOverlay").classList.contains("open")) closeHelp();
+  });
+
+  // --------------------------
+  // Init
+  // --------------------------
+  makeOptions1to10($("#selNote"));
+  makeOptions1to10($("#selGroup"));
+  makeOptions1to10($("#selFrame"));
+  makeScopeMultiSelect($("#selScopes"));
+  normalizeScopesSelection();
+  syncTypeCheckboxes();
+
+  updateLeftMeta();
+  rebuildPairDropdown();
+  updateNavUI();
+  renderTokens();
+
+  setLeftTab("text");
+  setTab("whole");
+  exportJsAccordingToActiveTab();
+  updateBuildStamps();
+</script>
+</body></html>
